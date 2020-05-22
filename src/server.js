@@ -2,7 +2,7 @@ import express from "express";
 import { ApolloServer, gql } from "apollo-server-express";
 import { models } from "./db";
 
-const PORT = 4001;
+const PORT = 4000;
 
 const typeDefs = gql`
   type Ticket {
@@ -55,15 +55,82 @@ const resolvers = {
      * We have implemented this first query for you to set up an initial pattern.
      */
     tickets: async (root, args, context) => {
+      return models.Ticket.findAll()
+    },
+
+    ticket(root, args, context) {
+      return models.Ticket.findByPk(args.id)
+    }
+  },
+
+  Ticket: {
+    children: async (root, args, context) => {
       return models.Ticket.findAll({
         where: {
-          parentId: null
+          parentId: root.id
         }
       });
     }
   },
-  Ticket: {},
-  Mutation: {}
+
+  Mutation: {
+    createTicket: async (root, args, context) => {
+      return models.Ticket.create({
+        title: args.title,
+        isCompleted: args.isCompleted
+      })
+    },
+
+    updateTicket: async (root, args, context) => {
+      console.log("Teste do title: "+args.title)
+      if( models.Ticket.update({
+        title: args.title
+      }, {
+        where: {
+          id: args.id
+        }
+      })) {
+        return models.Ticket.findByPk(args.id)
+      } return 
+    },
+
+    toggleTicket: async (root, args, context) => {
+      if( models.Ticket.update({
+        isCompleted: args.isCompleted
+      }, {
+        where: {
+          id: args.id
+        }
+      })) {
+        return models.Ticket.findByPk(args.id)
+      } return 
+    },
+
+    removeTicket: async (root, args, context) => {
+      models.Ticket.destroy({ where: { id: args.id }}) 
+      return models.Ticket.findAll()
+    },
+
+    addChildrenToTicket(root, args, context) {
+      if( models.Ticket.update({
+        parentId: args.parentId
+      }, {
+        where: {
+          id: args.id
+        }
+      })) {
+        return models.Ticket.findByPk(args.id)
+      } return 
+    },
+
+    setParentOfTicket(parentId, childId) {
+
+    },
+
+    removeParentFromTicket(id) {
+
+    }
+  }
 };
 
 const server = new ApolloServer({
